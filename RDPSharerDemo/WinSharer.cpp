@@ -1,14 +1,24 @@
 #include "WinSharer.h"
 
 WinSharer::WinSharer() {
+    const GUID CLSID_RDPSession = { 0x9B78F0E6, 0x3E05, 0x4A5B, 0xB2, 0xE8, 0xE7, 0x43, 0xA8, 0x95, 0x6B, 0x65 };
+    const GUID IID_IRDPSRAPISharingSession = { 0xeeb20886, 0xe470, 0x4cf6, 0x84, 0x2b, 0x27, 0x39, 0xc0, 0xec, 0x5c, 0xfb };
+    IRDPSRAPISharingSession* rdpSession;
+    IUnknown* iUnknow;
+
     CHECK(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED));
-    CHECK(m_rdpSession.CoCreateInstance(__uuidof(RDPSession), nullptr, CLSCTX_INPROC));
+    //CHECK(m_rdpSession.CoCreateInstance(__uuidof(RDPSession), nullptr, CLSCTX_INPROC));
+    CHECK(CoCreateInstance(CLSID_RDPSession, NULL, CLSCTX_ALL, IID_IUnknown, (void**)&iUnknow));
+    CHECK(iUnknow->QueryInterface(IID_IRDPSRAPISharingSession, (void**)&rdpSession));
+
 
     CComPtr<IRDPSRAPISessionProperties> props;
-    CHECK(m_rdpSession->get_Properties(&props));
+    CHECK(rdpSession->get_Properties(&props));
     const CComBSTR propName = "FrameCaptureIntervalInMs";
     const CComVariant propValue{ 1000, VT_I4 };
     CHECK(props->put_Property(propName, propValue));
+
+    m_rdpSession.Attach(rdpSession);
 
     WriteToLog(L"Successfully created RDPSession instance");
 
