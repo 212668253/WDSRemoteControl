@@ -4,6 +4,12 @@ WinSharer::WinSharer() {
     CHECK(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED));
     CHECK(m_rdpSession.CoCreateInstance(__uuidof(RDPSession), nullptr, CLSCTX_INPROC));
 
+    CComPtr<IRDPSRAPISessionProperties> props;
+    CHECK(m_rdpSession->get_Properties(&props));
+    const CComBSTR propName = "FrameCaptureIntervalInMs";
+    const CComVariant propValue{ 1000, VT_I4 };
+    CHECK(props->put_Property(propName, propValue));
+
     WriteToLog(L"Successfully created RDPSession instance");
 
     CComPtr<IRDPSRAPIVirtualChannelManager> vcm;
@@ -31,6 +37,14 @@ void WinSharer::open()
         m_paused = false;
     }
     WriteToLog(L"Sharing session successfully started");
+
+    CComPtr<IRDPSRAPISessionProperties> props;
+    CHECK(m_rdpSession->get_Properties(&props));
+    const CComBSTR propName = L"FrameCaptureIntervalInMs";
+    CComVariant propValue;
+    CHECK(props->get_Property(propName, &propValue));
+    const int frameIntervalMs = propValue.intVal;
+    WriteToLog(L"FrameCaptureIntervalInMs: " + std::to_wstring(frameIntervalMs));
 }
 
 void WinSharer::close()
